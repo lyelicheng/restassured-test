@@ -1,7 +1,10 @@
 package com.llye.test.restassuredtest;
 
+import com.llye.test.restassuredtest.dto.CustomerDto;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.response.Response;
+import io.restassured.response.ResponseBody;
 import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +13,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -52,16 +55,22 @@ class APITest {
     void testGetAllCustomers() {
         RequestSpecification requestSpecification = buildRequestSpecification();
 
-        given(requestSpecification)
+        Response response = given(requestSpecification)
                 .queryParam("pageNumber", 0)
                 .queryParam("pageSize", 5)
                 .when()
                 .get("/v1/customers")
                 .then()
                 .statusCode(200)
-                .body("id", contains(1))
-                .body("firstName", contains("John"))
-                .body("lastName", contains("Smith"));
+                .extract()
+                .response();
+
+        ResponseBody<?> responseBody = response.getBody();
+        CustomerDto[] customerDtoResp = responseBody.as(CustomerDto[].class);
+        assertEquals(1, customerDtoResp.length);
+        assertEquals(1, customerDtoResp[0].getId());
+        assertEquals("John", customerDtoResp[0].getFirstName());
+        assertEquals("Smith", customerDtoResp[0].getLastName());
     }
 
     private RequestSpecification buildRequestSpecification() {
